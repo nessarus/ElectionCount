@@ -1,6 +1,6 @@
 ##    Name:             Joshua Ng
 ##    Student Number:   20163079
-##    version:          18/5/2017
+##    version:          25/5/2017
 
 ##    project2.py is a program to be used to decide an election for a single 
 ##    seat under the Preferential Voting system used in the Western 
@@ -36,6 +36,13 @@ def storeCandidateData(candidates):
     for i in range(0, len(candidates)):
         data[i+1] = candidates[i]
     return data
+
+##    listOfLists returns a list of lists of size number. 
+def listOfLists(size):
+    list_of_lists = []
+    for i in range (size):
+        list_of_lists.append([])
+    return list_of_lists
 
 ##    parseVote(s, option) returns the vote from s. option enables
 ##    Optional Preferential Voting.
@@ -86,7 +93,7 @@ def parsePaper(s, n, option=False):
             return ([], "non-digits")
         elif parse_vote > n:
             return ([], "too high")
-        elif parse_vote in votes:
+        elif (parse_vote in votes) & (parse_vote != 0):
             return ([], "duplicate")
         elif parse_vote == 0:
             blank_vote+=1
@@ -129,15 +136,12 @@ def getPapers(f, n, option=False):
 def orderedPaper(p):
     ordered = []
     preferences = []
-    
     for i in range(len(p)):
         if p[i] != 0:
             preferences.append((p[i],i))
     preferences.sort()
-
     for i in range(len(preferences)):
         ordered.append(preferences[i][1]+1)
-    
     return ordered
 
 ##    orderedPapers(ps) returns an ordered list of papers, ps. E.g. 
@@ -149,15 +153,15 @@ def orderedPapers(ps):
         papers.append(orderedPaper(p)) 
     return papers
 
-##    countVotes(cs, cv, ps) updates the dictionary, cs, of candidates’ 
+##    countVotes(cs, ct, ps) updates the dictionary, cs, of candidates’ 
 ##    lists of votes with the ballot papers ps. The total votes for each
-##    candidate, cv, will also be updated.
+##    candidate, ct, will also be updated.
 ##    For example, a = {1: [], 2:[], 3:[], 4:[], 5:[]}
 ##    b = {1:0, 2:0, 3:0, 4:0, 5:0}
 ##    countVotes(a, b, [[1,3,4,5,2], [4,2,5,3,1]])
 ##    list(a.items()) = [(1, [[1, 3, 4, 5, 2]]), (2, []), (3, []), (4,
 ##    [[4, 2, 5, 3, 1]]), (5, [])]
-def countVotes(cs, cv, ps): 
+def countVotes(cs, ct, ps): 
     for p in ps:
         while p != []:
             if not p[0] in cs:
@@ -166,61 +170,106 @@ def countVotes(cs, cv, ps):
                 cs[p[0]].append(p)
                 break
     for c in cs:
-        cv[c] = len(cs[c])
+        ct[c] = len(cs[c])
 
-##    printCount(c, n, win) displays the election count c, i.e. the result
-##    from countVotes.  win parameter determines if winner is printed.
-##    n is the number of counts.
-def printCount(c, n, win):
+##    printCount(ct, cn, n) displays the ct, the candidates total votes.
+##    cn is the candidates names. n is the number of counts.
+def printCount(ct, cn, n):
     print("Count {}".format(n))
-    for i in range(len(c)):
-        print("{0}     {1}".format(c[i][0], c[i][1]))
+    for i in range(len(ct)):
+        print("{0}\t{1}".format(ct[i][1], cn[ct[i][0]]))
     print()
+
+##    printCandidate prints the winner or the eliminated candidates. 
+def printCandidate(ct, cn, win):
     if(win == False):
-        print("Candidate {} has the smallest number of votes and is "
-              "eliminated from the count".format(c[len(c)-1][1]))
+        for i in ct:
+            print("Candidate {} has the smallest number of votes and is "
+                  "eliminated from the count".format(cn[i[0]]))
         print()
     if(win == True):
-        print("Candidate {} is elected".format(c[0][1]))
-        
+        print()
+        print("Candidate {} is elected".format(cn[ct[0][0]]))
+
+##    byTotalVotes is a helper method to sort candidate_total_list
+def byVotes(pair):
+    return pair[1]
 
 ##    main will require the file-name for the file of candidates names 
 ##    and the file-name of the file of ballots option enables Optional 
 ##    Preferential Voting.
 def main(candidates_file_name, ballots_file_name, optional=False):
+    #get candidates
     candidates = getCandidates(candidates_file_name)
     if candidates == []:
         print("no candidates")
         return
     number_candidates = len(candidates)
-    candidate_names = storeCandidateData(candidates)
-    candidate_voters = storeCandidateData([0]*number_candidates)
-    candidate_total_votes = []
-    for i in candidates:
-        candidate_total_votes.append([i, 0])
-    
-    
 
-
+    #get papers
     papers = getPapers(ballots_file_name, number_candidates, optional)
     if papers == []:
         print("no votes")
         return
 
-main()
+    #setup candidate data, number of eligible votes, winner condition
+    candidate_names = storeCandidateData(candidates)
+    list_of_lists = listOfLists(number_candidates)
+    candidate_voters = storeCandidateData(list_of_lists)
+    list_of_lists = listOfLists(number_candidates)
+    for i in list_of_lists:
+        i.append(0)
+    candidate_total_votes = storeCandidateData(list_of_lists)
+    total_votes = len(papers)
+    winner = False
 
-##    ordered_papers = orderedPapers(ps)
-##    results = countVotes(candidates, normal_papers)
-##
-##    number_formal = len(formal_papers)
-##    number_informal = len(papers) - number_formal
-##        
-##    print("Nerdvanian election 2017\n")
-##    print("There were {0} informal votes".format(number_informal))
-##    print("There were {0} formal votes\n".format(number_formal))
-##    printCount(results)
+    #count votes
+    voter_pool = orderedPapers(papers)
+    for count in range(1, number_candidates):
+        countVotes(candidate_voters, candidate_total_votes, voter_pool)
 
+        candidate_total_list = list(candidate_total_votes.items())
+        candidate_total_list.sort(key=byVotes, reverse=True)
 
+        #print result
+        printCount(candidate_total_list, candidate_names, count)
 
-
+        #check if candidate has <50% of eligible votes
+        if candidate_total_list[0][1] > total_votes//2:
+            winner = True
+            printCandidate(candidate_total_list, candidate_names, winner)
+            break
         
+        #check to see if there are more than one lowest candidate
+        low_total = candidate_total_list[-1][1]
+        lowest = []
+        for i  in candidate_total_list:
+            if i[1] == low_total:
+                lowest.append(i)
+
+        #check for a tie
+        if len(lowest) == len(candidate_total_list):
+            winner = True
+            candidate_total_list.sort()
+            printCandidate([candidate_total_list[-1]], candidate_names, winner)
+            break
+
+        #check if there are only two candidates.
+        if len(candidate_total_list) < 3:
+            winner = True
+            printCandidate(candidate_total_list, candidate_names, winner)
+            break
+
+        #print candidate winner or eliminated canidates
+        printCandidate(lowest, candidate_names, winner)
+
+        #update pool of elegible votes to be recounted.        
+        voter_pool = []
+        for i in lowest:
+            voter_pool += candidate_voters[i[0]]
+            del candidate_voters[i[0]]
+            del candidate_total_votes[i[0]]
+
+if __name__ == "__main__":
+    main("candidates.txt", "papers2.txt", True)
+

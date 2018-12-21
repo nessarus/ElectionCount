@@ -14,6 +14,6 @@ ElectionCount.main(candidates_file_name, ballots_file_name, optional)
 * candidates_file_name: address to a text file with the candidates' names 
 each separted with a new line.
 * ballots_file_name: address to a text file with numbered preferences. 
-1 being the highest preference in order of candidates, separated with a 
-comma per preference and new line per vote.
+1 being the highest preference. File is read in order of candidates, 
+separated with a comma per preference and new line per vote.
 * optional: set to true to enable preferential voting

@@ -2,7 +2,7 @@
 ##    Student Number:   20163079
 ##    version:          25/5/2017
 
-##    project2.py is a program to be used to decide an election for a single 
+##    ElectionCount is a program to be used to decide an election for a single 
 ##    seat under the Preferential Voting system used in the Western 
 ##    Australia Legislative Assembly (the Lower House).
 

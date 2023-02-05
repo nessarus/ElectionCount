@@ -1,274 +1,301 @@
-##    Name:             Joshua Ng
-##    Student Number:   20163079
-##    version:          25/5/2017
+"""
+Name:             Joshua Ng
+Student Number:   20163079
+version:          28/01/2023
 
-##    ElectionCount is a program to be used to decide an election for a single 
-##    seat under the Preferential Voting system used in the Western 
-##    Australia Legislative Assembly (the Lower House).
-
+ElectionCount is a program to be used to decide an election for a single
+seat under the Preferential Voting system used in the Western
+Australia Legislative Assembly (the Lower House).
+"""
 import os.path
 
-##    getCandidates(f) returns a list containing the candidates' names from 
-##    the file f.The names will be one per line with no extraneous 
-##    characters. Disregard any blanklines in f. If f doesn't exist, it prints
-##    an error message and return an empty list. For example, 
-##    getCandidates("candidates.txt") = ["Major Clanger", "Soup Dragon", 
-##    "Froglet", "Iron Chicken", "The Cloud"].
-##    >>> getCandidates(f) returns ["Major Clanger", "...], || print(error), []
-def getCandidates(f):
-    candidates = []
-    if os.path.isfile(f):
-        file_f = open(f, "r")
-        for names in file_f:
-            if names not in ['\n', '\r\n']:
-                candidates.append(names.strip())
-        file_f.close()
-    else:
-        print("file doesn't exist")
-    return candidates
 
-##    storeCandidateData returns a dictionary assigning 1,2,3,...etc to
-##    each Candidates' data.
-##    e.g. storeCandidateData(["Major Clanger", "...]) returns
-##    [(1, 'Major Clanger'), (2, ...]
-def storeCandidateData(candidates):
-    data = {}
-    for i in range(0, len(candidates)):
-        data[i+1] = candidates[i]
-    return data
+def get_candidates(candidates_filename):
+    """
+    Gets a list containing the candidates' names from the file.
 
-##    listOfLists returns a list of lists of size number. 
-def listOfLists(size):
-    list_of_lists = []
-    for i in range (size):
-        list_of_lists.append([])
-    return list_of_lists
+    Candidate file format:
+    * If f doesn't exist an error message is printed.
+    * One name per line.
+    * No extraneous characters.
+    * Disregard blank lines.
 
-##    parseVote(s, option) returns the vote from s. option enables
-##    Optional Preferential Voting.
-##    Return 0 for an empty vote (Optional Preferential Voting). 
-##    Returns -1 if there are any non-digits. 
-##    e.g. 	parseVote("15") = parseVote(" 15 ") = 15. 
-##            parseVote("", True) = parseVote(" ", True) = 0, 
-##            parseVote("", False) = parseVote("no") = parseVote("1 5") = -1,
-def parseVote(s, option=False): 
-    vote = s.strip()
-    if (vote == "") & option:
+    :param candidates_filename: The file name containing the candidate names.
+    :return:                    A list of candidate names.
+    """
+    if os.path.isfile(candidates_filename):
+        with open(candidates_filename, "r") as file_f:
+            return [name.strip() for name in file_f]
+
+    print("File does not exist.")
+    return []
+
+
+def parse_vote(token, option=False):
+    """
+    Parses the numbered preferences. Option enables preferential voting.
+    Return 0 for an empty vote (optional preferential voting).
+
+    e.g.    parse_vote("15") = parseVote(" 15 ") = 15.
+            parse_vote("", True) = parseVote(" ", True) = 0,
+            parse_vote("", False) = parseVote("no") = parseVote("1 5") = -1
+
+    :param token:   The token to be parsed.
+    :param option:  True if optional preferential voting is enabled.
+    :return:        The parsed vote. Returns -1 if there are any non-digits.
+    """
+    token = token.strip()
+
+    if token:
+        if token.isdigit():
+            vote = int(token)
+            if vote or option:
+                return vote
+    elif option:
         return 0
-    elif not vote.isdigit():
-        return -1
-    else:
-        return int(s)
 
-##    parsePaper(s, n, option) returns the votes from the ballot paper s in an 
-##    election with n candidates, plus an error message. option enables
-##    Optional Preferential Voting.
-##    If s is formal, it returns the list of numbers found in s and the empty 
-##    string. If s is informal, return an empty list of numbers and the
-##    appropriate string below. 
-##    i.e. parsePaper("3, 1, 2", 3) = ([3, 1, 2], "")
-##    i.e. parsePaper(", , ,", 4) = parsePaper("0, 0", 4) = ([ ], "blank"),
-##    i.e. parsePaper("3, -8, 1", 3) = parsePaper("3, 1.8, 2", 3) = parsePaper
-##    ("pointless, 2, 1", 1) = ([ ], "non-digits"),
-##    i.e. parsePaper("1,2,3,4,5", 4) = ([ ], "too long"),
-##    i.e. parsePaper("6,1,2,3,4",5) = ([ ], "too high")
-##    i.e. parsePaper("1, 1", 2) = ([ ], "duplicate")
-##    i.e parsePaper("1, , , ", 4, True) = ([1], "")
-##
-##    parsePaper(s,n): >> ([3, 1, 2], ""), >> ([ ], "blank"), 
-##                     >> ([ ], "non-digits"), >> ([ ], "too long")
-##                     >> ([ ], "too high"), >> ([ ], "duplicate")
-def parsePaper(s, n, option=False): 
-    ballot = s.split(",")
-    len_ballot = len(ballot)
-    votes = []
-    blank_vote = 0
-    
-    if len_ballot > n:
-        return ([], "too long")
-    
-    for vote in ballot:
-        parse_vote = parseVote(vote, option)
-        if parse_vote == -1:
-            return ([], "non-digits")
-        elif parse_vote > n:
-            return ([], "too high")
-        elif (parse_vote in votes) & (parse_vote != 0):
-            return ([], "duplicate")
-        elif parse_vote == 0:
-            blank_vote+=1
-            votes.append(0)
-        else:
-            votes.append(parse_vote)
+    return -1
 
-    if blank_vote == len_ballot:
-        return ([], "blank")
-    
-    return (votes, "")
 
-##    getPapers(f, n, option) returns a list containing the ballot papers from 
-##    the file f, in  an election with n candidates. Each line of the file 
-##    is treated as a separate paper. If f doesn't exist, it will print error 
-##    message and return the empty list. option enables Optional Preferential
-##    Voting. For example:
-##    getPapers("smallfile.txt", 4) = [[1, 2, 3, 4], [1, 3, 2, 4]...
-##    getPapers("smallfile.txt", 4, True) = [[3,2,1], [...
-def getPapers(f, n, option=False):
+def parse_paper(paper, number_of_candidates, option=False):
+    """
+    Parses the votes from the ballot paper together with error status.
+    option enables preferential voting.
+
+    i.e. ("3, 1, 2", 3)                     >> ([3, 1, 2], "")
+    i.e. (", , ,", 4), ("0, 0", 4)          >> ([], "blank"),
+    i.e. ("3, -8, 1", 3), ("3, 1.8, 2", 3)  >> ([], "non-digits"),
+    i.e. ("1, 2, 3, 4, 5", 4)               >> ([], "too long"),
+    i.e. ("6, 1, 2, 3, 4", 5)               >> ([], "too high")
+    i.e. ("1, 1", 2)                        >> ([], "duplicate")
+    i.e. ("1, , , ", 4, True)               >> ([1], "")
+
+    :param paper:                   The paper to be parsed.
+    :param number_of_candidates:    The number of candidates.
+    :param option:                  Enables preferential votes.
+    :return:    Formal papers returns a list of votes and the empty string.
+                Informal papers return an empty list and an error message.
+    """
+    votes = [parse_vote(token, option) for token in paper.split(",")]
+
+    if len(votes) > number_of_candidates:
+        return [], "too long"
+
+    unique_votes = set()
+    blank_paper = True
+
+    for vote in votes:
+        if vote == -1:
+            return [], "non-digits"
+
+        if vote > number_of_candidates:
+            return [], "too high"
+
+        if vote != 0 and vote in unique_votes:
+            return [], "duplicate"
+
+        unique_votes.add(vote)
+
+        if vote != 0:
+            blank_paper = False
+
+    if blank_paper:
+        return [], "blank"
+
+    return votes, ""
+
+
+def get_papers(file, number_of_candidates, option=False):
+    """
+    Gets the ballot papers from the file f.
+    Each line of the file is treated as a separate paper.
+    If f doesn't exist, it will print error message and return the empty list.
+    option enables preferential voting.
+
+    For example:
+    getPapers("smallfile.txt", 4) = [[1, 2, 3, 4], [1, 3, 2, 4]...
+    getPapers("smallfile.txt", 4, True) = [[3,2,1], [...
+
+    :param file:                    The ballot paper file.
+    :param number_of_candidates:    The number of the candidates.
+    :param option:                  Set true to enable preferential voting.
+    :return:                        A list of parsed papers.
+    """
     papers = []
-    if os.path.isfile(f):
-        file_f = open(f, "r")
+    errors = []
+
+    if os.path.isfile(file):
+        file_f = open(file, "r")
+
         for line in file_f:
-            paper = []
-            paper = parsePaper(line, n, option)
-            if paper[0] != []:
-                papers.append(paper[0])
+            paper, error = parse_paper(line, number_of_candidates, option)
+
+            if error:
+                errors.append(error)
+                continue
+
+            papers.append(paper)
+
         file_f.close()
     else:
         print("file doesn't exist")
-    return papers
 
-##    orderedPaper(p) returns a list of candidates in order of the 
-##    voter’s preferences. For example:
-##    orderedPaper([2,4,5,3,1]) >> [5,1,4,2,3]
-##    orderedPaper([4,5,0,3,1]) >> [5,4,1,2]
-##    @param p is the list of the voter’s preferences
-##    @returns list of candidates
-def orderedPaper(p):
-    ordered = []
-    preferences = []
-    for i in range(len(p)):
-        if p[i] != 0:
-            preferences.append((p[i],i))
+    return papers, errors
+
+
+def ordered_paper(paper):
+    """
+    Creates a list of candidates in voter's preferred order.
+    The list is ordered from most preferred to least.
+
+    For example:
+    [2,4,5,3,1]                 >> [4,0,3,1,2]
+    [4,5,0,3,1]                 >> [4,3,0,1]
+
+    :param paper:   The list of the voter’s candidate preferences.
+    :return:        A list of candidates in order of the voter's preference.
+    """
+    preferences = [(preference, index) for index, preference in enumerate(paper) if preference]
     preferences.sort()
-    for i in range(len(preferences)):
-        ordered.append(preferences[i][1]+1)
+    ordered = [index for preference, index in preferences]
     return ordered
 
-##    orderedPapers(ps) returns an ordered list of papers, ps. E.g. 
-##    orderedPapers([[2,4,5,3,1], [4,5,0,3,1]]) = [[5, 1, 4, 2, 3],
-##    [5, 4, 1, 2]]
-def orderedPapers(ps):
-    papers = []
-    for p in ps:
-        papers.append(orderedPaper(p)) 
+
+def ordered_papers(papers):
+    """
+    Creates a list of ordered papers.
+    
+    For example:
+    [[2,4,5,3,1], [4,5,0,3,1]]      >>  [[4, 0, 3, 1, 2], [4, 3, 0, 1]]
+
+    :param papers:      A list of ballot papers.
+    :return:            A list of ordered papers
+    """
+    papers = [ordered_paper(paper) for paper in papers]
     return papers
 
-##    countVotes(cs, ct, ps) updates the dictionary, cs, of candidates’ 
-##    lists of votes with the ballot papers ps. The total votes for each
-##    candidate, ct, will also be updated.
-##    For example, a = {1: [], 2:[], 3:[], 4:[], 5:[]}
-##    b = {1:0, 2:0, 3:0, 4:0, 5:0}
-##    countVotes(a, b, [[1,3,4,5,2], [4,2,5,3,1]])
-##    list(a.items()) = [(1, [[1, 3, 4, 5, 2]]), (2, []), (3, []), (4,
-##    [[4, 2, 5, 3, 1]]), (5, [])]
-def countVotes(cs, ct, ps): 
-    for p in ps:
-        while p != []:
-            if not p[0] in cs:
-                p.pop(0)
-            else:
-                cs[p[0]].append(p)
-                break
-    for c in cs:
-        ct[c] = len(cs[c])
 
-##    printCount(ct, cn, n) displays the ct, the candidates total votes.
-##    cn is the candidates names. n is the number of counts.
-def printCount(ct, cn, n):
-    print("Count {}".format(n))
-    for i in range(len(ct)):
-        print("{0}\t{1}".format(ct[i][1], cn[ct[i][0]]))
+def count_votes(candidates, totals, papers):
+    """
+    Tallies and sets the ballot papers into the respective candidates
+    For example:
+    candidates  = {0: [], 1:[], 2:[], 3:[], 4:[]}
+    totals      = {0:0, 1:0, 2:0, 3:0, 4:0}
+    papers      = [[0,2,3,4,1], [3,1,3,2,0]]
+    candidates  >> {0: [[0, 2, 3, 4, 1]], 1: [], 2: [], 3: [[3, 1, 4, 2, 0]], 4: []}
+
+    :param candidates:  A dictionary of candidates and their ballot papers.
+    :param totals:      A dictionary of candidates and their total votes.
+    :param papers:      A list of voter papers.
+    """
+    for paper in papers:
+        paper = [vote for vote in paper if vote in candidates]
+        if paper:
+            candidates[paper[0]].append(paper)
+
+    for candidate, candidate_papers in candidates.items():
+        totals[candidate] = len(candidate_papers)
+
+
+def print_count(totals, names):
+    """
+    Displays the total tally of votes for each candidate.
+
+    :param totals:              A dictionary of candidates and their total votes.
+    :param names:               The candidates' names.
+    """
+    count = list(totals.items())
+    count.sort(key=lambda item: item[1], reverse=True)
+    count = ["{0}\t{1}".format(total, names[candidate]) for candidate, total in count]
+    print(*count, sep="\n")
     print()
 
-##    printCandidate prints the winner or the eliminated candidates. 
-def printCandidate(ct, cn, win):
-    if(win == False):
-        for i in ct:
-            print("Candidate {} has the smallest number of votes and is "
-                  "eliminated from the count".format(cn[i[0]]))
-        print()
-    if(win == True):
-        print()
-        print("Candidate {} is elected".format(cn[ct[0][0]]))
 
-##    byTotalVotes is a helper method to sort candidate_total_list
-def byVotes(pair):
-    return pair[1]
+def print_candidate(name, win):
+    """
+    Prints the winner or the eliminated candidates.
+    :param name:    The candidates' names.
+    :param win:     Print if the candidate won the election.
+    """
+    if win:
+        print("Candidate {} is elected".format(name))
+    else:
+        print("Candidate {} has the smallest number of votes and is "
+              "eliminated from the count\n".format(name))
 
-##    main will require the file-name for the file of candidates names 
-##    and the file-name of the file of ballots option enables Optional 
-##    Preferential Voting.
-def main(candidates_file_name, ballots_file_name, optional=False):
-    #get candidates
-    candidates = getCandidates(candidates_file_name)
-    if candidates == []:
+
+def main(candidates_filename, ballots_filename, optional=False):
+    """
+    Handles processing an election count request.
+
+    :param candidates_filename:     The candidate filename.
+    :param ballots_filename:        The ballot filename.
+    :param optional:                Enable preferential voting.
+    """
+    # get candidates
+    names = get_candidates(candidates_filename)
+
+    if not names:
         print("no candidates")
         return
-    number_candidates = len(candidates)
+    
+    number_of_candidates = len(names)
 
-    #get papers
-    papers = getPapers(ballots_file_name, number_candidates, optional)
-    if papers == []:
+    # get papers
+    papers, errors = get_papers(ballots_filename, number_of_candidates, optional)
+
+    if not papers:
         print("no votes")
         return
 
-    #setup candidate data, number of eligible votes, winner condition
-    candidate_names = storeCandidateData(candidates)
-    list_of_lists = listOfLists(number_candidates)
-    candidate_voters = storeCandidateData(list_of_lists)
-    list_of_lists = listOfLists(number_candidates)
-    for i in list_of_lists:
-        i.append(0)
-    candidate_total_votes = storeCandidateData(list_of_lists)
-    total_votes = len(papers)
-    winner = False
+    # count votes
+    papers = ordered_papers(papers)
+    candidates = {index: [] for index, name in enumerate(names)}
+    totals = {candidate: 0 for candidate in candidates}
+    count = 1
 
-    #count votes
-    voter_pool = orderedPapers(papers)
-    for count in range(1, number_candidates):
-        countVotes(candidate_voters, candidate_total_votes, voter_pool)
+    while len(papers) > 0:
+        print("Count {}".format(count))
+        count_votes(candidates, totals, papers)
+        print_count(totals, names)
 
-        candidate_total_list = list(candidate_total_votes.items())
-        candidate_total_list.sort(key=byVotes, reverse=True)
+        # Check if candidate has <50% of eligible votes.
+        total_votes = sum([len(papers) for candidate, papers in candidates.items()])
+        highest = max(totals, key=totals.get)
 
-        #print result
-        printCount(candidate_total_list, candidate_names, count)
-
-        #check if candidate has <50% of eligible votes
-        if candidate_total_list[0][1] > total_votes//2:
-            winner = True
-            printCandidate(candidate_total_list, candidate_names, winner)
-            break
-        
-        #check to see if there are more than one lowest candidate
-        low_total = candidate_total_list[-1][1]
-        lowest = []
-        for i  in candidate_total_list:
-            if i[1] == low_total:
-                lowest.append(i)
-
-        #check for a tie
-        if len(lowest) == len(candidate_total_list):
-            winner = True
-            candidate_total_list.sort()
-            printCandidate([candidate_total_list[-1]], candidate_names, winner)
+        if totals[highest] > total_votes // 2:
+            print_candidate(names[highest], True)
             break
 
-        #check if there are only two candidates.
-        if len(candidate_total_list) < 3:
-            winner = True
-            printCandidate(candidate_total_list, candidate_names, winner)
+        # Find the lowest candidates
+        lowest = min(totals, key=totals.get)
+        lowest_total = totals[lowest]
+        lowest = [candidate for candidate, total in totals.items() if total == lowest_total]
+
+        # Check for a tie
+        if len(totals) == len(lowest):
+            for candidate, total in totals:
+                print_candidate(names[candidate], True)
             break
 
-        #print candidate winner or eliminated canidates
-        printCandidate(lowest, candidate_names, winner)
+        # Check if there are only two candidates.
+        if len(totals) < 3:
+            print_candidate(names[highest], True)
+            break
 
-        #update pool of elegible votes to be recounted.        
-        voter_pool = []
-        for i in lowest:
-            voter_pool += candidate_voters[i[0]]
-            del candidate_voters[i[0]]
-            del candidate_total_votes[i[0]]
+        # Print eliminated candidates.
+        for low in lowest:
+            print_candidate(names[low], False)
+
+        # Update pool of eligible votes to be recounted.
+        papers = [paper for low in lowest for paper in candidates[low]]
+        for low in lowest:
+            candidates.pop(low)
+            totals.pop(low)
+        count += 1
+
+    print("Number of informal votes {}.".format(len(errors)))
+
 
 if __name__ == "__main__":
     main("candidates.txt", "papers2.txt", True)
